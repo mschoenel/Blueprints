@@ -1,0 +1,46 @@
+blueprint:
+  name: Alexa → Gemini → Alexa (Chat)
+  description: Alexa fragt über HA Google Gemini an, die Antwort wird per Alexa TTS ausgegeben.
+  domain: automation
+  input:
+    alexa_device:
+      name: Alexa Gerät
+      description: Echo-Gerät für die Ausgabe
+      selector:
+        entity:
+          domain: media_player
+          integration: alexa_media
+    default_prompt:
+      name: Standardantwort
+      description: Text, wenn keine Frage erkannt wird
+      default: "Kann ich später noch mal probieren?"
+
+mode: single
+trigger:
+  - platform: conversation
+    command: "frage ai {question}"
+
+variables:
+  question: "{{ trigger.slots.question | default('') }}"
+
+action:
+  - choose:
+      - conditions: "{{ question != '' }}"
+        sequence:
+          - service: google_generative_ai_conversation.generate_content
+            data:
+              prompt: "{{ question }}"
+            response_variable: gemini_answer
+          - service: notify.alexa_media
+            data:
+              target: !input alexa_device
+              message: "{{ gemini_answer.text }}"
+              data:
+                type: tts
+    default:
+      - service: notify.alexa_media
+        data:
+          target: !input alexa_device
+          message: "{{ default_prompt }}"
+          data:
+            type: tts
