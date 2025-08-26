@@ -10,6 +10,10 @@ blueprint:
         entity:
           domain: media_player
           integration: alexa_media
+    trigger_phrase:
+      name: Auslösender Satz
+      description: Satz, mit dem Alexa die Automation startet (z. B. „frage ai“)
+      default: "frage ai"
     default_prompt:
       name: Standardantwort
       description: Text, wenn keine Frage erkannt wird
@@ -18,7 +22,7 @@ blueprint:
 mode: single
 trigger:
   - platform: conversation
-    command: "frage ai {question}"
+    command: "{{ trigger_phrase }} {question}"
 
 variables:
   question: "{{ trigger.slots.question | default('') }}"
