@@ -1,9 +1,9 @@
 blueprint:
-  name: Hausstatus mit AI und Alexa
+  name: AI-Abfrage und Alexa-Ausgabe
   description: >
-    Fragt einen AI-Conversation-Agenten (Gemini, OpenAI) nach dem Hausstatus
-    und gibt die Antwort über das ausgewählte Alexa-Gerät aus.
-  domain: automation
+    Führt eine AI-Abfrage mit einem Conversation-Agenten aus und gibt die
+    Antwort über ein Alexa-Gerät aus.
+  domain: script
   input:
     agent_id:
       name: AI-Agent
@@ -27,12 +27,7 @@ blueprint:
         entity:
           domain: media_player
 
-trigger:
-  - platform: event
-    event_type: dummy_trigger
-    # Dieser Blueprint wird manuell oder per Szene ausgelöst
-
-action:
+sequence:
   - alias: AI-Abfrage starten
     action: conversation.process
     data:
