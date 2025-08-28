@@ -1,0 +1,57 @@
+blueprint:
+  name: "Hausstatus mit Gemini und Alexa"
+  description: >
+    Ruft Gemini über den Conversation-Agent auf und gibt die Antwort per Alexa (Cloud TTS) aus.
+    Konfigurierbar: Frage, Alexa-Geräte, Sprache, Stimme.
+  domain: script
+  input:
+    frage_text:
+      name: Frage an Gemini
+      description: Was soll Gemini beantworten?
+      default: >
+        Agiere als Home Assistant Experte. Formuliere einen kurzen Satz mit den folgenden Inhalten:
+        Sind noch Fenster oder Türen geöffnet? - welche Lichter sind noch eingeschaltet? Ohne Schalter oder Rollladen
+      selector:
+        text:
+    alexa_geraete:
+      name: Alexa Geräte
+      description: Wähle die Alexa Media Player aus, die die Sprachausgabe machen sollen.
+      selector:
+        target:
+          entity:
+            domain: media_player
+    sprache:
+      name: Sprache
+      description: Sprache für die Ausgabe (z. B. de-DE, en-US)
+      default: de-DE
+      selector:
+        text:
+    stimme:
+      name: Stimme
+      description: Wähle eine Stimme aus, die von Amazon Polly unterstützt wird (z. B. Vicki, Hans, Daniel).
+      default: Vicki
+      selector:
+        text:
+
+mode: single
+sequence:
+  - alias: Anfrage an Gemini
+    action: conversation.process
+    data:
+      agent_id: conversation.google_ai_conversation
+      text: !input frage_text
+    response_variable: antwort
+
+  - alias: Text vorbereiten
+    variables:
+      sprachnachricht: >
+        {{ antwort.response.speech.plain.speech | default('Ich konnte den Status nicht abrufen.') }}
+
+  - alias: Sprachausgabe über Alexa
+    action: tts.cloud_say
+    target: !input alexa_geraete
+    data:
+      message: "{{ sprachnachricht }}"
+      language: !input sprache
+      options:
+        voice: !input stimme
