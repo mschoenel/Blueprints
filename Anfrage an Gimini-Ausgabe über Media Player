@@ -1,57 +1,55 @@
 blueprint:
-  name: "Hausstatus mit Gemini und Alexa"
+  name: Hausstatus mit AI und Alexa
   description: >
-    Ruft Gemini über den Conversation-Agent auf und gibt die Antwort per Alexa (Cloud TTS) aus.
-    Konfigurierbar: Frage, Alexa-Geräte, Sprache, Stimme.
-  domain: script
+    Fragt einen AI-Conversation-Agenten (Gemini, OpenAI) nach Hausstatus
+    und gibt die Antwort über das zuletzt angesprochene Alexa-Gerät aus.
+  domain: automation
   input:
-    frage_text:
-      name: Frage an Gemini
-      description: Was soll Gemini beantworten?
+    agent_id:
+      name: AI-Agent
+      description: Wähle den AI-Agenten (z. B. conversation.google_ai_conversation)
+      selector:
+        entity:
+          domain: conversation
+    ai_prompt:
+      name: AI Prompt
+      description: Text, der an den AI-Agenten gesendet wird
       default: >
-        Agiere als Home Assistant Experte. Formuliere einen kurzen Satz mit den folgenden Inhalten:
-        Sind noch Fenster oder Türen geöffnet? - welche Lichter sind noch eingeschaltet? Ohne Schalter oder Rollladen
+        Agiere als Home Assistant Experte. Formuliere einen kurzen Satz mit den
+        folgenden Inhalten: Sind noch Fenster oder Türen geöffnet? - welche
+        Lichter sind noch eingeschaltet? Ohne Schalter oder Rollladen.
       selector:
         text:
-    alexa_geraete:
-      name: Ausgabe Geräte
-      description: Wähle die Alexa Media Player aus, die die Sprachausgabe machen sollen.
+    fallback_alexa:
+      name: Fallback Alexa-Gerät
+      description: Wird genutzt, falls kein zuletzt genutztes Alexa-Gerät gefunden wird.
       selector:
-        target:
-          entity:
-            domain: media_player
-    sprache:
-      name: Sprache
-      description: Sprache für die Ausgabe (z. B. de-DE, en-US)
-      default: de-DE
-      selector:
-        text:
-    stimme:
-      name: Stimme
-      description: Wähle eine Stimme aus, die von Amazon Polly unterstützt wird (z. B. Vicki, Hans, Daniel).
-      default: Vicki
-      selector:
-        text:
+        entity:
+          domain: media_player
 
-mode: single
-sequence:
-  - alias: Anfrage an Gemini
+trigger:
+  - platform: event
+    event_type: dummy_trigger
+    # Dieser Blueprint wird manuell oder per Szene aufgerufen
+
+action:
+  - alias: AI-Abfrage starten
     action: conversation.process
     data:
-      agent_id: conversation.google_ai_conversation
-      text: !input frage_text
-    response_variable: antwort
+      agent_id: !input agent_id
+      text: !input ai_prompt
+    response_variable: ai_response
 
-  - alias: Text vorbereiten
+  - alias: Variablen setzen
     variables:
-      sprachnachricht: >
-        {{ antwort.response.speech.plain.speech | default('Ich konnte den Status nicht abrufen.') }}
+      letzter_alexa: "{{ state_attr('sensor.last_called', 'entity_id') | default(fallback) }}"
+      fallback: !input fallback_alexa
+      ausgabe_text: "{{ ai_response.response.speech.plain.speech | default('Ich konnte den Status nicht abrufen.') }}"
 
   - alias: Sprachausgabe über Alexa
     action: tts.cloud_say
-    target: !input alexa_geraete
+    target:
+      entity_id: "{{ letzter_alexa }}"
     data:
-      message: "{{ sprachnachricht }}"
-      language: !input sprache
-      options:
-        voice: !input stimme
+      message: "{{ ausgabe_text }}"
+      language: "de-DE"
