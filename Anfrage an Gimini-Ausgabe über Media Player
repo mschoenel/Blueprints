@@ -1,8 +1,8 @@
 blueprint:
   name: Hausstatus mit AI und Alexa
   description: >
-    Fragt einen AI-Conversation-Agenten (Gemini, OpenAI) nach Hausstatus
-    und gibt die Antwort über das zuletzt angesprochene Alexa-Gerät aus.
+    Fragt einen AI-Conversation-Agenten (Gemini, OpenAI) nach dem Hausstatus
+    und gibt die Antwort über das ausgewählte Alexa-Gerät aus.
   domain: automation
   input:
     agent_id:
@@ -20,9 +20,9 @@ blueprint:
         Lichter sind noch eingeschaltet? Ohne Schalter oder Rollladen.
       selector:
         text:
-    fallback_alexa:
-      name: Fallback Alexa-Gerät
-      description: Wird genutzt, falls kein zuletzt genutztes Alexa-Gerät gefunden wird.
+    alexa_device:
+      name: Alexa-Gerät
+      description: Wähle das Alexa-Gerät für die Sprachausgabe
       selector:
         entity:
           domain: media_player
@@ -30,7 +30,7 @@ blueprint:
 trigger:
   - platform: event
     event_type: dummy_trigger
-    # Dieser Blueprint wird manuell oder per Szene aufgerufen
+    # Dieser Blueprint wird manuell oder per Szene ausgelöst
 
 action:
   - alias: AI-Abfrage starten
@@ -42,14 +42,12 @@ action:
 
   - alias: Variablen setzen
     variables:
-      letzter_alexa: "{{ state_attr('sensor.last_called', 'entity_id') | default(fallback) }}"
-      fallback: !input fallback_alexa
       ausgabe_text: "{{ ai_response.response.speech.plain.speech | default('Ich konnte den Status nicht abrufen.') }}"
 
   - alias: Sprachausgabe über Alexa
     action: tts.cloud_say
     target:
-      entity_id: "{{ letzter_alexa }}"
+      entity_id: !input alexa_device
     data:
       message: "{{ ausgabe_text }}"
       language: "de-DE"
