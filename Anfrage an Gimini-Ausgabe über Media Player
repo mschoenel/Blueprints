@@ -14,7 +14,7 @@ blueprint:
       selector:
         text:
     alexa_geraete:
-      name: Alexa Geräte
+      name: Ausgabe Geräte
       description: Wähle die Alexa Media Player aus, die die Sprachausgabe machen sollen.
       selector:
         target:
